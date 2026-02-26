@@ -1,7 +1,10 @@
 package me.anisjamadar.onlinestore.controllers;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import me.anisjamadar.onlinestore.config.JwtConfig;
 import me.anisjamadar.onlinestore.dtos.JwtResponse;
 import me.anisjamadar.onlinestore.dtos.auth.LoginRequest;
 import me.anisjamadar.onlinestore.dtos.user.UserResponse;
@@ -24,10 +27,12 @@ public class AuthController {
     private final JwtService jwtService;
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final JwtConfig jwtConfig;
 
     @PostMapping("/login")
     public ResponseEntity<JwtResponse> login(
-        @Valid @RequestBody LoginRequest loginRequest
+        @Valid @RequestBody LoginRequest loginRequest,
+        HttpServletResponse response
     ) {
         authenticationManager.authenticate(
             new UsernamePasswordAuthenticationToken(
@@ -37,9 +42,17 @@ public class AuthController {
         );
 
         var user = userRepository.findByEmail(loginRequest.getEmail()).orElseThrow();
-        var token = jwtService.generateToken(user);
+        var accessToken = jwtService.generateAccessToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
 
-        return ResponseEntity.ok(new JwtResponse(token));
+        var cookie = new Cookie("refreshToken", refreshToken);
+        cookie.setHttpOnly(true);
+        cookie.setPath("/auth/refresh");
+        cookie.setMaxAge(jwtConfig.getRefreshTokenExpiration());
+        cookie.setSecure(true);
+        response.addCookie(cookie);
+
+        return ResponseEntity.ok(new JwtResponse(accessToken));
     }
 
     @PostMapping("/validate")
