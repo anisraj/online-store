@@ -1,5 +1,6 @@
 package me.anisjamadar.onlinestore.services;
 
+import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
@@ -21,5 +22,18 @@ public class JwtService {
             .expiration(new Date(System.currentTimeMillis() + 1000 * EXPIRATION_TIME))
             .signWith(Keys.hmacShaKeyFor(secret.getBytes()))
             .compact();
+    }
+
+    public boolean validateToken(String token) {
+        try {
+            var claims = Jwts.parser()
+                    .verifyWith(Keys.hmacShaKeyFor(secret.getBytes()))
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            return claims.getExpiration().after(new Date());
+        } catch (JwtException e) {
+            return false;
+        }
     }
 }
