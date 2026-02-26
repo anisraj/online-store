@@ -1,6 +1,7 @@
 package me.anisjamadar.onlinestore.config;
 
 import lombok.AllArgsConstructor;
+import me.anisjamadar.onlinestore.domain.Role;
 import me.anisjamadar.onlinestore.filters.JwtAuthenticationFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -55,6 +56,7 @@ public class SecurityConfiguration {
             .authorizeHttpRequests(c -> {
                 c
                  .requestMatchers("/carts/**").permitAll()
+                 .requestMatchers("/admin/**").hasRole(Role.ADMIN.name())
                  .requestMatchers(HttpMethod.POST, "/users").permitAll()
                  .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                  .requestMatchers(HttpMethod.POST, "/auth/refresh").permitAll()
@@ -65,6 +67,9 @@ public class SecurityConfiguration {
                 e.authenticationEntryPoint(
                     new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED)
                 );
+                e.accessDeniedHandler(((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                }));
             });
         return http.build();
     }
