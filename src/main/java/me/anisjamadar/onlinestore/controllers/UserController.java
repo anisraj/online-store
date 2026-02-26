@@ -2,6 +2,7 @@ package me.anisjamadar.onlinestore.controllers;
 
 import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
+import me.anisjamadar.onlinestore.domain.Role;
 import me.anisjamadar.onlinestore.dtos.user.ChangePasswordRequest;
 import me.anisjamadar.onlinestore.dtos.user.RegisterUserRequest;
 import me.anisjamadar.onlinestore.dtos.user.UpdateUserRequest;
@@ -63,6 +64,7 @@ public class UserController {
 
         var user = userMapper.toEntity(request);
         user.setPassword(passwordEncoder.encode(user.getPassword()));
+        user.setRole(Role.USER);
         userRepository.save(user);
         var userDto = userMapper.toDto(user);
         var uri = uriComponentsBuilder.path("/users/{id}").buildAndExpand(userDto.getId()).toUri();
