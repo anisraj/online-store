@@ -150,6 +150,11 @@
             <optional>true</optional>
         </dependency>
 
+        <dependency>
+            <groupId>com.stripe</groupId>
+            <artifactId>stripe-java</artifactId>
+            <version>27.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>
