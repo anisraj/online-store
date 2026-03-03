@@ -1,6 +1,7 @@
 package me.anisjamadar.onlinestore.controllers;
 
 import com.stripe.exception.SignatureVerificationException;
+import com.stripe.model.Event;
 import com.stripe.model.PaymentIntent;
 import com.stripe.net.Webhook;
 import jakarta.validation.Valid;
@@ -46,25 +47,33 @@ public class CheckoutController {
         try {
             var event = Webhook.constructEvent(payload, signature, webhookSecretKey);
             System.out.println(event.getType());
-            var stripeObject = event.getDataObjectDeserializer().getObject().orElse(null);
+
             switch (event.getType()) {
                 case "payment_intent.succeeded" -> {
-                    var paymentIntent = (PaymentIntent) stripeObject;
-                    if (paymentIntent != null) {
-                        var orderId = paymentIntent.getMetadata().get("order_id");
-                        var order = orderRepository.findById(Long.valueOf(orderId)).orElseThrow();
-                        order.setStatus(OrderStatus.PAID);
-                        orderRepository.save(order);
-                    }
+                    var orderId = extractOrderId(event);
+                    var order = orderRepository.findById(orderId).orElseThrow();
+                    order.setStatus(OrderStatus.PAID);
+                    orderRepository.save(order);
                 }
                 case "payment_intent.failed" -> {
-
+                    var orderId = extractOrderId(event);
+                    var order = orderRepository.findById(orderId).orElseThrow();
+                    order.setStatus(OrderStatus.FAILED);
+                    orderRepository.save(order);
                 }
             }
             return ResponseEntity.ok().build();
         } catch (SignatureVerificationException e) {
             return ResponseEntity.badRequest().build();
         }
+    }
+
+    private Long extractOrderId(Event event) {
+        var stripeObject = event.getDataObjectDeserializer()
+                .getObject()
+                .orElseThrow(() -> new PaymentException("Could not deserialize stripe event, check the SDK compatibility."));
+        var paymentIntent = (PaymentIntent) stripeObject;
+        return Long.valueOf(paymentIntent.getMetadata().get("order_id"));
     }
 
     @ExceptionHandler(PaymentException.class)

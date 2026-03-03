@@ -34,7 +34,7 @@ public class StripePaymentGateway implements PaymentGateway{
             return new CheckoutSession(session.getUrl());
         } catch (StripeException e) {
             System.out.println(e.getMessage());
-            throw new PaymentException();
+            throw new PaymentException(e.getMessage());
         }
     }
 
